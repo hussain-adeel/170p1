@@ -149,7 +149,6 @@ def m(nodes, moves):
     for node in moves:
         dist = 0
         node_puzzles = node.getState()
-        print_puzzle(node_puzzles)
         for i in range (0, 3):
             for j in range (0, 3):
                 if node_puzzles[i][j] == goal_state[i][j]: continue
