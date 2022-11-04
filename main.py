@@ -1,5 +1,4 @@
-import queue
-from re import L # TO ACCESS PRIORITY QUEUE
+import queue # TO ACCESS PRIORITY QUEUE
 import time # TO CALCULATE AMNT OF TIME PROGRAM TAKES
 import copy # TO DEEP COPY LISTS OF LISTS (cannot lose values)
 
