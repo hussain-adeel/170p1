@@ -1,11 +1,12 @@
-import queue # TO ACCESS PRIORITY QUEUE
+import queue
+from re import L # TO ACCESS PRIORITY QUEUE
 import time # TO CALCULATE AMNT OF TIME PROGRAM TAKES
 import copy # TO DEEP COPY LISTS OF LISTS (cannot lose values)
 
 
-# Some puzzles taken from Dr. Keogh's project handout (may be edited to test)
-default_easy = [[1, 3, 6],[5, 0, 7],[4, 8, 2]]
-default = [[1, 6, 7],[5, 0, 3],[4, 8, 2]]
+# Some puzzles taken from Dr. Keogh's project handout
+default_easy = [[1, 2, 3],[4, 5, 6],[0, 7, 8]]
+default = [[1, 3, 6],[5, 0, 7],[4, 8, 2]]
 default_hard = [[0, 7, 2],[4, 6, 1],[3, 5, 8]]
 
 # End-goal of what we want
@@ -20,7 +21,7 @@ def driver():
     print("2. Custom Puzzle")
 
     # This select stores value of if user wants to use a default or custom value
-    select = int(input("Selection: "));
+    select = int(input("Selection: "))
 
     # IF-statement that allows user to choose from default values or create own
     if (select == 1):
@@ -85,6 +86,11 @@ def print_puzzle(puzzle):
         print(puzzle[i])
     print('\n')
 
+# simple function to see if we have reaeched the goal state 
+def goal(puzzle):
+    if (puzzle == goal_state): return 1
+    else: return 0
+
 # Simple node class to store basic info of 8 puzzle nodes (the puzzle, cost, depth, fn, zero-index)
 class Node:
     def __init__(self, state, hn, gn):
@@ -100,36 +106,69 @@ class Node:
         return self.hn
     def getGn(self):
         return self.gn
+    def setHn(self, new_hn):
+        self.hn = new_hn
+    def updateFn(self):
+        self.fn = self.hn + self.gn
     def getZeroIndex(self):
         for i, k in enumerate(self.state):
             for l, m in enumerate(k):
                 if m == 0: return [l, i]
     # this is used by the priority queue to determine how to order these nodes
-    def __lt__(self, compare):
-        return self.fn < compare.getFn()
-
-# simple function to see if we have reaeched the goal state 
-def goal(puzzle):
-    if (puzzle == goal_state): return 1
-    else: return 0
+    def __lt__(self, compare): 
+        if (self.fn == compare.getFn()): return self.gn < compare.getGn()
+        else: return self.fn < compare.getFn()
 
 # function to sort PQ using Uniform Cost Search (notice we have cost set to 0 for all...
 # ... operations so this is basically bfs )
 def ucs(nodes, moves):
-    new_nodes = nodes;
+    new_nodes = nodes
 
     for node in moves:
         new_nodes.put(node)
 
     return new_nodes
 
-# functin to sort PQ using A* w/ the Missing Tile Heuristic
+# functin to sort PQ w/ the Missing Tile Heuristic
 def mt(nodes, moves):
-    return
 
-#function to sort PQ using A8 w/ the Manhattan Heuristic
+    new_nodes = nodes
+    for node in moves:
+        dist = 0
+        node_puzzles = node.getState()
+        for i in range (0, 3):
+            for j in range (0, 3):
+                if node_puzzles[i][j] != goal_state[i][j]: dist += 1
+        node.setHn(dist)
+        node.updateFn()
+        new_nodes.put(node)
+    return new_nodes
+
+#function to sort PQ w/ the Manhattan Heuristic
 def m(nodes, moves):
-    return
+    new_nodes = nodes
+    for node in moves:
+        dist = 0
+        node_puzzles = node.getState()
+        print_puzzle(node_puzzles)
+        for i in range (0, 3):
+            for j in range (0, 3):
+                if node_puzzles[i][j] == goal_state[i][j]: continue
+                else:
+                    match node_puzzles[i][j]:
+                        case 1: dist += abs(j - 0) + abs(i - 0)
+                        case 2: dist += abs(j - 1) + abs(i - 0)
+                        case 3: dist += abs(j - 2) + abs(i - 0)
+                        case 4: dist += abs(j - 0) + abs(i - 1)
+                        case 5: dist += abs(j - 1) + abs(i - 1)
+                        case 6: dist += abs(j - 2) + abs(i - 1)
+                        case 7: dist += abs(j - 0) + abs(i - 2)
+                        case 8: dist += abs(j - 1) + abs(i - 2)
+        node.setHn(dist)
+        node.updateFn()
+        new_nodes.put(node)
+    
+    return new_nodes
 
 def expand(currNode, repeatStates):
 
@@ -149,8 +188,8 @@ def expand(currNode, repeatStates):
         up_copy[zeroY][zeroX] = up_copy[zeroY - 1][zeroX]
         up_copy[zeroY - 1][zeroX] = 0
         if repeatStates.get(tuple(tuple(s) for s in up_copy)) != 'R':
-            up_node = Node(up_copy,  currNode.getHn(), currNode.getGn() + 1);
-            moves.append(up_node);
+            up_node = Node(up_copy,  currNode.getHn(), currNode.getGn() + 1)
+            moves.append(up_node)
 
     # Same concept as up except for down (not against bottom edge...)
     if (zeroY != 2):
@@ -158,8 +197,8 @@ def expand(currNode, repeatStates):
         down_copy[zeroY][zeroX] = down_copy[zeroY + 1][zeroX]
         down_copy[zeroY + 1][zeroX] = 0
         if repeatStates.get(tuple(tuple(s) for s in down_copy)) != 'R':
-            down_node = Node(down_copy,  currNode.getHn(), currNode.getGn() + 1);
-            moves.append(down_node);
+            down_node = Node(down_copy,  currNode.getHn(), currNode.getGn() + 1)
+            moves.append(down_node)
 
     # Same concept as up except for left (not against left edge...)
     if (zeroX != 0):
@@ -167,8 +206,8 @@ def expand(currNode, repeatStates):
         left_copy[zeroY][zeroX] = left_copy[zeroY][zeroX - 1]
         left_copy[zeroY][zeroX - 1] = 0
         if repeatStates.get(tuple(tuple(s) for s in left_copy)) != 'R':
-            left_node = Node(left_copy,  currNode.getHn(), currNode.getGn() + 1);
-            moves.append(left_node);
+            left_node = Node(left_copy,  currNode.getHn(), currNode.getGn() + 1)
+            moves.append(left_node)
 
     # Same concept as up except for right (not against right edge...)
     if (zeroX != 2):
@@ -176,8 +215,8 @@ def expand(currNode, repeatStates):
         right_copy[zeroY][zeroX] = right_copy[zeroY][zeroX + 1]
         right_copy[zeroY][zeroX + 1] = 0
         if repeatStates.get(tuple(tuple(s) for s in right_copy)) != 'R':
-            right_node = Node(right_copy, currNode.getHn(), currNode.getGn() + 1);
-            moves.append(right_node);
+            right_node = Node(right_copy, currNode.getHn(), currNode.getGn() + 1)
+            moves.append(right_node)
     
     return moves
 
@@ -209,18 +248,23 @@ def general_search(puzzle, algorithim):
 
          # check if goal state reached
         if (goal(currNode.getState()) == 1):
-            print("REACHED GOAL STATE!")
-            print("The maximum queue size was: " + str(maxQueueSize))
-            print("The depth was: " + str(currNode.getGn()))
-            print("The number of nodes expanded was: " + str(numNodesExpanded))
+            print("----------------\n")
+            print_puzzle(currNode.getState())
+            print("\n!!! REACHED GOAL STATE !!!")
+            print("----------------")
+            print("Num of nodes expanded: " + str(numNodesExpanded))
+            print("Max queue size: " + str(maxQueueSize))
+            print("Depth: " + str(currNode.getGn()))
             return "success"
         
         # If not goal, then we need to expand it
         print("The best state to expand with a g(n) = " + str(currNode.getGn()) + " and h(n) = " + str(currNode.getHn()) + " is...")
         print_puzzle(currNode.getState())
-
-        # Need to sure no repeats of moves we already found through expanding
+        
+        # EXPAND to find new moves (need to do this sep. becasuse of how my repeat check works)
         new_moves = expand(currNode, repeatStates)
+        
+        # Need to sure no repeats of moves we already found through expanding
         for move in new_moves:
             t = tuple(tuple(x) for x in move.getState())
             repeatStates[t] = 'R'
